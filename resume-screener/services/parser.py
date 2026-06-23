@@ -1,7 +1,8 @@
 import fitz  # PyMuPDF
 from docx import Document
 import os
-
+from typing import Optional
+import re
 def extract_text_from_pdf(file_path: str) -> str:
     """Extract text from PDF using PyMuPDF"""
     text = ""
@@ -34,3 +35,10 @@ def get_candidate_name(file_name: str) -> str:
     """Extract candidate name from filename as fallback"""
     name = os.path.splitext(file_name)[0]  # remove extension
     return name.replace("_", " ").replace("-", " ").title()
+    import re
+
+def extract_email(resume_text: str) -> Optional[str]:
+    """Extract email address from resume text using regex"""
+    pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    matches = re.findall(pattern, resume_text)
+    return matches[0] if matches else None

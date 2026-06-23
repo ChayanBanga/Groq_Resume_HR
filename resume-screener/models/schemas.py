@@ -10,6 +10,7 @@ class JobDescription(BaseModel):
 class ResumeScore(BaseModel):
     candidate_name: str
     file_name: str
+    email: Optional[str] = None  
     match_score: float          # 0-100
     skill_match: List[str]      # matched skills
     missing_skills: List[str]   # skills not found

@@ -6,7 +6,7 @@ import io
 from typing import Annotated, List
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
-
+from services.email_service import send_shortlist_email, send_rejection_email
 from models.schemas import JobDescription, ScreeningResult
 from services.parser import parse_resume
 from services.groq_service import score_resume, rank_candidates
@@ -94,15 +94,16 @@ async def export_results():
     writer = csv.writer(output)
 
     writer.writerow([
-        "Rank", "Candidate Name", "File Name", "Match Score (%)",
-        "Recommendation", "Experience Match", "Matched Skills",
-        "Missing Skills", "Summary"
+    "Rank", "Candidate Name", "Email", "File Name", "Match Score (%)",
+    "Recommendation", "Experience Match", "Matched Skills",
+    "Missing Skills", "Summary"
     ])
 
     for i, candidate in enumerate(last_result["results"]):
         writer.writerow([
             i + 1,
             candidate.candidate_name,
+            candidate.email or "Not found",
             candidate.file_name,
             candidate.match_score,
             candidate.recommendation,
@@ -120,7 +121,40 @@ async def export_results():
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=screening_{job_title}.csv"}
     )
+@router.post("/notify")
+async def notify_candidates():
+    """Send shortlist or rejection emails to all candidates"""
 
+    if not last_result:
+        raise HTTPException(status_code=404, detail="No screening results found. Run a screening first.")
+
+    job_title = last_result["job_title"]
+    results = last_result["results"]
+
+    sent = []
+    skipped = []
+
+    for candidate in results:
+        if not candidate.email:
+            skipped.append(candidate.candidate_name)
+            continue
+
+        try:
+            if candidate.recommendation.startswith("STRONG") or candidate.recommendation.startswith("GOOD"):
+                send_shortlist_email(candidate.candidate_name, candidate.email, job_title)
+                sent.append({"name": candidate.candidate_name, "email": candidate.email, "status": "shortlisted"})
+            else:
+                send_rejection_email(candidate.candidate_name, candidate.email, job_title)
+                sent.append({"name": candidate.candidate_name, "email": candidate.email, "status": "rejected"})
+
+        except Exception as e:
+            skipped.append(f"{candidate.candidate_name} (error: {str(e)})")
+
+    return {
+        "message": "Emails processed",
+        "sent": sent,
+        "skipped": skipped
+    }
 
 @router.get("/health")
 async def health_check():

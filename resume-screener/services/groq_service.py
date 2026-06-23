@@ -4,7 +4,7 @@ from groq import Groq
 from models.schemas import ResumeScore, JobDescription
 from services.embeddings import match_skills
 from dotenv import load_dotenv
-
+from services.parser import extract_email
 load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -84,6 +84,7 @@ Return this exact JSON structure:
     return ResumeScore(
         candidate_name=data.get("candidate_name", "Unknown"),
         file_name=file_name,
+        email=extract_email(resume_text),
         match_score=data.get("match_score", 0),
         skill_match=matched,        # use embedding results, not LLM results
         missing_skills=missing,     # use embedding results, not LLM results

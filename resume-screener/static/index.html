@@ -327,10 +327,15 @@
       <h2>Ranked Candidates</h2>
       <div style="display:flex; align-items:center; gap:1rem;">
         <span id="resultsMeta"></span>
+        
         <a id="downloadBtn" href="/api/resume/export"
           style="background:#6366f1; color:white; padding:0.4rem 1rem; border-radius:6px; font-size:0.85rem; font-weight:600; text-decoration:none;">
           Download CSV
         </a>
+        <button onclick="notifyCandidates()"
+          style="background:#059669; color:white; padding:0.4rem 1rem; border-radius:6px; font-size:0.85rem; font-weight:600; border:none; cursor:pointer;">
+          Send Emails
+        </button>
       </div>
     </div>
     <div id="candidateList"></div>
@@ -495,7 +500,22 @@
     document.getElementById('results').classList.add('active');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
   }
-  
+  async function notifyCandidates() {
+    try {
+        const res = await fetch('/api/resume/notify', { method: 'POST' });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.detail || 'Something went wrong');
+
+        const sent = data.sent.length;
+        const skipped = data.skipped.length;
+
+        alert(`Emails sent: ${sent}\nSkipped (no email found): ${skipped}`);
+
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+  }
 </script>
 </body>
 </html>
