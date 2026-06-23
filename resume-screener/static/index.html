@@ -325,7 +325,13 @@
   <div class="results" id="results">
     <div class="results-header">
       <h2>Ranked Candidates</h2>
-      <span id="resultsMeta"></span>
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <span id="resultsMeta"></span>
+        <a id="downloadBtn" href="/api/resume/export"
+          style="background:#6366f1; color:white; padding:0.4rem 1rem; border-radius:6px; font-size:0.85rem; font-weight:600; text-decoration:none;">
+          Download CSV
+        </a>
+      </div>
     </div>
     <div id="candidateList"></div>
   </div>
@@ -489,6 +495,7 @@
     document.getElementById('results').classList.add('active');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
   }
+  
 </script>
 </body>
 </html>
