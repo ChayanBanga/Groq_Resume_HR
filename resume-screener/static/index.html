@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Screener</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 2rem;
+      border-bottom: 1px solid #1e2433;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .logo span { color: #6366f1; }
+    .badge {
+      background: #6366f120;
+      color: #6366f1;
+      border: 1px solid #6366f140;
+      padding: 0.2rem 0.7rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+    .card {
+      background: #161b27;
+      border: 1px solid #1e2433;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.4rem; }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #1e2433;
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus { border-color: #6366f1; }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .upload-area {
+      border: 2px dashed #1e2433;
+      border-radius: 10px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .upload-area:hover { border-color: #6366f1; background: #6366f108; }
+    .upload-area.dragover { border-color: #6366f1; background: #6366f115; }
+
+    .upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .upload-area p { color: #64748b; font-size: 0.9rem; }
+    .upload-area strong { color: #6366f1; }
+
+    .file-list { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .file-tag {
+      background: #6366f115;
+      border: 1px solid #6366f130;
+      color: #a5b4fc;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .file-tag button {
+      background: none; border: none; color: #6366f1;
+      cursor: pointer; font-size: 1rem; line-height: 1;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 1rem;
+    }
+
+    .btn:hover { background: #4f46e5; }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 3rem;
+      color: #64748b;
+    }
+
+    .loader.active { display: block; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #1e2433;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results { display: none; }
+    .results.active { display: block; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .results-header h2 { font-size: 1.2rem; font-weight: 700; color: #fff; }
+    .results-header span { color: #64748b; font-size: 0.9rem; }
+
+    .candidate-card {
+      background: #161b27;
+      border: 1px solid #1e2433;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .candidate-card:hover { border-color: #6366f140; }
+
+    .candidate-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .candidate-name { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .candidate-file { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+
+    .score-badge {
+      font-size: 1.5rem;
+      font-weight: 800;
+      padding: 0.3rem 0.8rem;
+      border-radius: 8px;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .score-high { background: #06402015; color: #4ade80; border: 1px solid #4ade8030; }
+    .score-mid  { background: #78350f15; color: #fbbf24; border: 1px solid #fbbf2430; }
+    .score-low  { background: #4c051515; color: #f87171; border: 1px solid #f8717130; }
+
+    .recommendation {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.8rem;
+    }
+
+    .rec-strong { background: #4ade8015; color: #4ade80; border: 1px solid #4ade8030; }
+    .rec-good   { background: #fbbf2415; color: #fbbf24; border: 1px solid #fbbf2430; }
+    .rec-weak   { background: #f8717115; color: #f87171; border: 1px solid #f8717130; }
+
+    .summary { color: #94a3b8; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; }
+
+    .skills-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+
+    .skill-tag {
+      padding: 0.2rem 0.6rem;
+      border-radius: 5px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+
+    .skill-match   { background: #4ade8015; color: #4ade80; border: 1px solid #4ade8025; }
+    .skill-missing { background: #f8717115; color: #f87171; border: 1px solid #f8717125; }
+
+    .skills-label { font-size: 0.78rem; color: #64748b; margin-top: 0.8rem; margin-bottom: 0.3rem; }
+
+    .score-bar-wrap { margin: 0.8rem 0; }
+    .score-bar-bg {
+      background: #1e2433;
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 1s ease;
+    }
+
+    .rank-badge {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700;
+      margin-right: 0.75rem; flex-shrink: 0;
+    }
+
+    .rank-1 { background: #fbbf2420; color: #fbbf24; border: 1px solid #fbbf2440; }
+    .rank-2 { background: #94a3b820; color: #94a3b8; border: 1px solid #94a3b840; }
+    .rank-3 { background: #cd7c3020; color: #cd7c30; border: 1px solid #cd7c3040; }
+    .rank-n { background: #1e2433; color: #64748b; border: 1px solid #334155; }
+
+    .name-row { display: flex; align-items: center; }
+
+    .error-box {
+      background: #4c051520;
+      border: 1px solid #f8717140;
+      color: #f87171;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Resume<span>AI</span></div>
+  <div class="badge">LLaMA 70B · Groq</div>
+</header>
+
+<div class="container">
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <h2>Job Description</h2>
+    <div class="grid">
+      <div>
+        <label>Job Title</label>
+        <input type="text" id="jobTitle" placeholder="e.g. Backend Python Developer" />
+      </div>
+      <div>
+        <label>Required Experience (years)</label>
+        <input type="number" id="expYears" value="2" min="0" />
+      </div>
+    </div>
+    <div style="margin-top:1rem;">
+      <label>Job Description</label>
+      <textarea id="jobDesc" placeholder="Describe the role, responsibilities, tech stack..."></textarea>
+    </div>
+    <div style="margin-top:1rem;">
+      <label>Required Skills <span style="color:#64748b">(comma separated)</span></label>
+      <input type="text" id="skills" placeholder="Python, FastAPI, SQL, Docker, Git" />
+    </div>
+  </div>
+
+  <!-- UPLOAD CARD -->
+  <div class="card">
+    <h2>Upload Resumes</h2>
+    <div class="upload-area" id="uploadArea">
+      <input type="file" id="fileInput" multiple accept=".pdf,.docx" />
+      <div class="upload-icon">📄</div>
+      <p><strong>Click to upload</strong> or drag & drop</p>
+      <p style="margin-top:0.3rem;">PDF or DOCX · Multiple files supported</p>
+    </div>
+    <div class="file-list" id="fileList"></div>
+    <div class="error-box" id="errorBox"></div>
+    <button class="btn" id="screenBtn" onclick="screenResumes()">Screen Resumes</button>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>Analyzing resumes with LLaMA 70B...</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <div class="results-header">
+      <h2>Ranked Candidates</h2>
+      <span id="resultsMeta"></span>
+    </div>
+    <div id="candidateList"></div>
+  </div>
+
+</div>
+
+<script>
+  let selectedFiles = [];
+
+  const fileInput = document.getElementById('fileInput');
+  const fileList  = document.getElementById('fileList');
+  const uploadArea = document.getElementById('uploadArea');
+
+  fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    addFiles(e.dataTransfer.files);
+  });
+
+  function addFiles(incoming) {
+    for (const f of incoming) {
+      if (!selectedFiles.find(x => x.name === f.name)) selectedFiles.push(f);
+    }
+    renderFileList();
+  }
+
+  function removeFile(name) {
+    selectedFiles = selectedFiles.filter(f => f.name !== name);
+    renderFileList();
+  }
+
+  function renderFileList() {
+    fileList.innerHTML = selectedFiles.map(f => `
+      <div class="file-tag">
+        📄 ${f.name}
+        <button onclick="removeFile('${f.name}')" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  function getScoreClass(score) {
+    if (score >= 75) return 'score-high';
+    if (score >= 50) return 'score-mid';
+    return 'score-low';
+  }
+
+  function getRecClass(rec) {
+    if (rec.includes('STRONG')) return 'rec-strong';
+    if (rec.includes('GOOD'))   return 'rec-good';
+    return 'rec-weak';
+  }
+
+  function getBarColor(score) {
+    if (score >= 75) return '#4ade80';
+    if (score >= 50) return '#fbbf24';
+    return '#f87171';
+  }
+
+  function getRankClass(i) {
+    return ['rank-1','rank-2','rank-3'][i] || 'rank-n';
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  function hideError() {
+    document.getElementById('errorBox').style.display = 'none';
+  }
+
+  async function screenResumes() {
+    hideError();
+
+    const title  = document.getElementById('jobTitle').value.trim();
+    const desc   = document.getElementById('jobDesc').value.trim();
+    const skills = document.getElementById('skills').value.trim();
+    const exp    = parseInt(document.getElementById('expYears').value) || 0;
+
+    if (!title)            return showError('Please enter a job title.');
+    if (!desc)             return showError('Please enter a job description.');
+    if (!skills)           return showError('Please enter at least one required skill.');
+    if (!selectedFiles.length) return showError('Please upload at least one resume.');
+
+    const btn = document.getElementById('screenBtn');
+    btn.disabled = true;
+
+    document.getElementById('loader').classList.add('active');
+    document.getElementById('results').classList.remove('active');
+
+    const formData = new FormData();
+    selectedFiles.forEach(f => formData.append('files', f));
+    formData.append('job_data', JSON.stringify({
+      title,
+      description: desc,
+      required_skills: skills.split(',').map(s => s.trim()).filter(Boolean),
+      experience_years: exp
+    }));
+
+    try {
+      const res  = await fetch('/api/resume/screen', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Something went wrong');
+
+      renderResults(data);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      document.getElementById('loader').classList.remove('active');
+      btn.disabled = false;
+    }
+  }
+
+  function renderResults(data) {
+    document.getElementById('resultsMeta').textContent =
+      `${data.total_resumes} candidate${data.total_resumes !== 1 ? 's' : ''} · ${data.job_title}`;
+
+    document.getElementById('candidateList').innerHTML = data.results.map((c, i) => `
+      <div class="candidate-card">
+        <div class="candidate-header">
+          <div>
+            <div class="name-row">
+              <div class="rank-badge ${getRankClass(i)}">#${i+1}</div>
+              <div class="candidate-name">${c.candidate_name}</div>
+            </div>
+            <div class="candidate-file" style="margin-left:2.5rem;">${c.file_name}</div>
+          </div>
+          <div class="score-badge ${getScoreClass(c.match_score)}">${c.match_score}%</div>
+        </div>
+
+        <span class="recommendation ${getRecClass(c.recommendation)}">${c.recommendation}</span>
+
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg">
+            <div class="score-bar-fill" style="width:${c.match_score}%; background:${getBarColor(c.match_score)}"></div>
+          </div>
+        </div>
+
+        <p class="summary">${c.summary}</p>
+
+        ${c.skill_match.length ? `
+          <div class="skills-label">✅ Matched Skills</div>
+          <div class="skills-row">
+            ${c.skill_match.map(s => `<span class="skill-tag skill-match">${s}</span>`).join('')}
+          </div>` : ''}
+
+        ${c.missing_skills.length ? `
+          <div class="skills-label">❌ Missing Skills</div>
+          <div class="skills-row">
+            ${c.missing_skills.map(s => `<span class="skill-tag skill-missing">${s}</span>`).join('')}
+          </div>` : ''}
+      </div>
+    `).join('');
+
+    document.getElementById('results').classList.add('active');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
