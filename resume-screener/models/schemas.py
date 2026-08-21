@@ -14,6 +14,8 @@ class ResumeScore(BaseModel):
     skill_match: List[str]      # matched skills
     missing_skills: List[str]   # skills not found
     experience_match: bool
+    flagged: bool = False       # True if integrity checks found something suspicious
+    flag_reasons: List[str] = [] 
     summary: str                # AI generated summary
     recommendation: str         # STRONG FIT / GOOD FIT / WEAK FIT
 
