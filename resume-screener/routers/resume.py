@@ -6,7 +6,7 @@ import io
 from typing import Annotated, List
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
-
+from services.integrity_check import run_integrity_checks
 from models.schemas import JobDescription, ScreeningResult
 from services.parser import parse_resume
 from services.groq_service import score_resume, rank_candidates
@@ -53,11 +53,19 @@ async def screen_resumes(
 
             if not resume_text:
                 raise ValueError("Could not extract text from resume")
-
+            file_ext = os.path.splitext(file.filename)[1].lower()
+            flagged, flag_reasons = run_integrity_checks(        #Added this for suspecious hidden text checkings...
+                file_path=file_path,
+                resume_text=resume_text,
+                required_skills=job.required_skills,
+                file_ext=file_ext,
+            )
             score = score_resume(
                 resume_text=resume_text,
                 file_name=file.filename,
                 job=job
+                flagged=flagged,
+                flag_reasons=flag_reasons,
             )
             results.append(score)
 
@@ -96,7 +104,7 @@ async def export_results():
     writer.writerow([
         "Rank", "Candidate Name", "File Name", "Match Score (%)",
         "Recommendation", "Experience Match", "Matched Skills",
-        "Missing Skills", "Summary"
+        "Missing Skills", "Summary", "Flagged", "Flag Reasons"
     ])
 
     for i, candidate in enumerate(last_result["results"]):
@@ -109,7 +117,9 @@ async def export_results():
             "Yes" if candidate.experience_match else "No",
             ", ".join(candidate.skill_match),
             ", ".join(candidate.missing_skills),
-            candidate.summary
+            candidate.summary,
+            "YES - REVIEW" if candidate.flagged else "No",
+            " | ".join(candidate.flag_reasons)
         ])
 
     output.seek(0)
