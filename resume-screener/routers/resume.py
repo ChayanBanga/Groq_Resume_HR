@@ -63,9 +63,9 @@ async def screen_resumes(
             score = score_resume(
                 resume_text=resume_text,
                 file_name=file.filename,
-                job=job
+                job=job,
                 flagged=flagged,
-                flag_reasons=flag_reasons,
+                flag_reasons=flag_reasons
             )
             results.append(score)
 

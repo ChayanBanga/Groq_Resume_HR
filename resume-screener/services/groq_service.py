@@ -87,8 +87,9 @@ Return this exact JSON structure:
 }}
 """
 
+    
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="qwen/qwen3.6-27b",
         messages=[
             {
                 "role": "system",
@@ -105,6 +106,8 @@ Return this exact JSON structure:
             }
         ],
         temperature=0.3,
+        response_format={"type": "json_object"},
+        reasoning_format="hidden",
     )
 
     raw = response.choices[0].message.content.strip()
@@ -113,8 +116,17 @@ Return this exact JSON structure:
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
+        raw = raw.strip()
 
-    data = json.loads(raw)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            data = json.loads(raw[start:end + 1])
+        else:
+            raise
 
     return ResumeScore(
         candidate_name=data.get("candidate_name", "Unknown"),
