@@ -122,7 +122,7 @@ uvicorn main:app --reload
 | POST | `/api/resume/screen` | Upload resumes + job description (as form data), returns ranked, scored, flagged candidates |
 | GET | `/api/resume/export` | Download the last screening result as CSV (includes flag status + reasons) |
 | GET | `/api/resume/health` | Health check |
-| GET | `/` | Frontend UI |
+
 
 ## Usage
 
